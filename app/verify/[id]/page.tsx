@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import Image from 'next/image';
 import { ShieldCheck, Calendar, Info, FileText, ArrowLeft, Loader2, Maximize2 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { fr } from 'fr-CA'; // Using available fr-CA if fr is not directly available or as fallback
+import { fr } from 'date-fns/locale'; // Using available fr-CA if fr is not directly available or as fallback
 
 interface Photo {
     id: string;
@@ -43,7 +43,7 @@ export default function VerifyPage({ params }: { params: Promise<{ id: string }>
         };
 
         fetchPhoto();
-    }, [params.id]);
+    }, [id]);
 
     if (isLoading) {
         return (
@@ -121,10 +121,12 @@ export default function VerifyPage({ params }: { params: Promise<{ id: string }>
                                         <Calendar className="h-6 w-6 text-blue-600" />
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest px-1 py-1">Date du document</h3>
-                                        <p className="text-lg font-semibold text-gray-800">
-                                            {format(new Date(photo.date), 'dd MMMM yyyy')}
-                                        </p>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest px-1 py-1 italic text-center">Date du document</h3>
+                                            <p className="text-lg font-semibold text-gray-800 text-center">
+                                                {format(new Date(photo.date), 'dd MMMM yyyy', { locale: fr })}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
 
