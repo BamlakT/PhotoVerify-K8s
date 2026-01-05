@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
     User, Mail, Phone, MapPin, Briefcase, Calendar,
     Fingerprint, Save, Copy, Check, Shield, Lock,
-    Hash, Globe, Smartphone
+    Hash, Globe, Smartphone, ChevronRight, Cpu, ScanFace, History, Sparkles
 } from 'lucide-react';
 
 export default function AccountPage() {
@@ -25,6 +25,7 @@ export default function AccountPage() {
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState({ text: '', type: '' });
     const [copied, setCopied] = useState(false);
+    const [showProtocol, setShowProtocol] = useState(false);
 
     // Crypto Hash Generation
     const generateSignature = useCallback(async (data: any) => {
@@ -146,6 +147,13 @@ export default function AccountPage() {
                                     <h1 className="text-3xl font-bold tracking-tight">Espace Certifié</h1>
                                     <p className="text-slate-400 font-medium">Gestion de votre identité et conformité numérique</p>
                                 </div>
+                                <button
+                                    onClick={() => setShowProtocol(!showProtocol)}
+                                    className="ml-auto bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 text-blue-300 px-4 py-2 rounded-xl text-sm font-bold flex items-center transition-all group"
+                                >
+                                    <span>Devenir certifié</span>
+                                    <ChevronRight className={`ml-1 h-4 w-4 transition-transform ${showProtocol ? 'rotate-90' : 'group-hover:translate-x-1'}`} />
+                                </button>
                             </div>
 
                             <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50 backdrop-blur-md">
@@ -168,6 +176,66 @@ export default function AccountPage() {
                                     </button>
                                 </div>
                             </div>
+
+                            {/* Protocol Section */}
+                            {showProtocol && (
+                                <div className="animate-in slide-in-from-top-4 duration-500 space-y-6 pt-4">
+                                    <div className="bg-blue-600/10 border border-blue-500/20 rounded-2xl p-6 md:p-8 space-y-8">
+                                        <div className="flex items-center space-x-3">
+                                            <Sparkles className="h-6 w-6 text-blue-400" />
+                                            <h2 className="text-xl font-bold text-white">Protocole de Certification Créateur</h2>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="bg-slate-800/40 p-5 rounded-2xl border border-slate-700/30 space-y-3">
+                                                <div className="bg-blue-500/20 p-2 w-fit rounded-lg">
+                                                    <ScanFace className="h-5 w-5 text-blue-400" />
+                                                </div>
+                                                <h3 className="font-bold text-slate-100">Vérification Biométrique</h3>
+                                                <p className="text-sm text-slate-400 leading-relaxed italic">
+                                                    Notre IA analyse les données biométriques et les documents d'identité pour créer un lien immuable entre votre identité réelle et votre signature numérique.
+                                                </p>
+                                            </div>
+
+                                            <div className="bg-slate-800/40 p-5 rounded-2xl border border-slate-700/30 space-y-3">
+                                                <div className="bg-emerald-500/20 p-2 w-fit rounded-lg">
+                                                    <Cpu className="h-5 w-5 text-emerald-400" />
+                                                </div>
+                                                <h3 className="font-bold text-slate-100">Validation Par IA</h3>
+                                                <p className="text-sm text-slate-400 leading-relaxed italic">
+                                                    Garantit que chaque actif émis respecte les normes d'intégrité de TruStation en détectant les falsifications et les duplications non autorisées.
+                                                </p>
+                                            </div>
+
+                                            <div className="bg-slate-800/40 p-5 rounded-2xl border border-slate-700/30 space-y-3">
+                                                <div className="bg-orange-500/20 p-2 w-fit rounded-lg">
+                                                    <History className="h-5 w-5 text-orange-400" />
+                                                </div>
+                                                <h3 className="font-bold text-slate-100">Traçabilité Historique</h3>
+                                                <p className="text-sm text-slate-400 leading-relaxed italic">
+                                                    Le protocole immuable suit tout le cycle de vie de vos créations, rendant impossible l'usurpation de vos droits de créateur certifié.
+                                                </p>
+                                            </div>
+
+                                            <div className="bg-slate-800/40 p-5 rounded-2xl border border-slate-700/30 space-y-3">
+                                                <div className="bg-purple-500/20 p-2 w-fit rounded-lg">
+                                                    <Shield className="h-5 w-5 text-purple-400" />
+                                                </div>
+                                                <h3 className="font-bold text-slate-100">Immunité des Preuves</h3>
+                                                <p className="text-sm text-slate-400 leading-relaxed italic">
+                                                    En devenant créateur certifié, vos preuves bénéficient d'un niveau supérieur de chiffrement post-quantique.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4">
+                                            <button className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all transform active:scale-[0.98]">
+                                                Devenir un créateur certifié
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
