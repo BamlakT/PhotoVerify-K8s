@@ -15,6 +15,7 @@ interface Photo {
     description: string | null;
     date: string;
     createdAt: string;
+    qrCodeData: string | null;
 }
 
 export default function VerifyPage({ params }: { params: Promise<{ id: string }> }) {
@@ -154,7 +155,24 @@ export default function VerifyPage({ params }: { params: Promise<{ id: string }>
                                         <span className="text-gray-500">Nom original :</span>
                                         <span className="font-medium text-gray-800 truncate max-w-[150px] italic">{photo.originalName}</span>
                                     </div>
-                                    <div className="pt-4 mt-4 border-t border-slate-200">
+                                    <div className="pt-4 mt-4 border-t border-slate-200 space-y-4">
+                                        <div className="flex flex-col items-center p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                                            {photo.qrCodeData ? (
+                                                <Image
+                                                    src={photo.qrCodeData}
+                                                    alt="Verification QR"
+                                                    width={120}
+                                                    height={120}
+                                                    className="rounded-lg"
+                                                />
+                                            ) : (
+                                                <div className="h-[120px] w-[120px] bg-slate-50 flex items-center justify-center rounded-lg">
+                                                    <ShieldCheck className="h-8 w-8 text-slate-200" />
+                                                </div>
+                                            )}
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-2">Empreinte de Vérification</p>
+                                        </div>
+
                                         <button
                                             className="w-full py-3 bg-white border-2 border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-100 transition-all flex items-center justify-center space-x-2"
                                             onClick={() => window.open(`/uploads/${photo.filename}`, '_blank')}
