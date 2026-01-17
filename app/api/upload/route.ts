@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
         const createdAt = new Date().toISOString();
 
         await db.run(
-            `INSERT INTO photos (id, filename, originalName, title, description, date, createdAt, qrCodeData, isPublic)
+            `INSERT INTO photos (id, filename, "originalName", title, description, date, "createdAt", "qrCodeData", "isPublic")
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [id, filename, file.name, title, description, date, createdAt, qrCodeData, isPublic]
         );

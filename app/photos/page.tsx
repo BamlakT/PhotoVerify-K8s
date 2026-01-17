@@ -158,10 +158,11 @@ export default function PhotosPage() {
                                     {/* Right: Photo (Top Right) */}
                                     <div className="w-full md:w-64 h-64 relative rounded-2xl overflow-hidden border-4 border-slate-50 shadow-inner shrink-0 group-hover:scale-105 transition-transform duration-500">
                                         <Image
-                                            src={`/uploads/${photo.filename}`}
+                                            src={`/api/uploads/${photo.filename}`}
                                             alt={photo.title || "Certificat"}
                                             fill
                                             className="object-cover"
+                                            unoptimized
                                         />
                                         <div className="absolute inset-0 bg-blue-600/10 mix-blend-multiply"></div>
                                     </div>
