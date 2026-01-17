@@ -1,0 +1,39 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+
+\title{PhotoVerify: Kubernetes Implementation Report}
+\author{}
+\date{January 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{Implementation Overview}
+The PhotoVerify application demonstrates a complete cloud-native implementation with:
+
+\begin{itemize}
+\item Next.js frontend with API routes
+\item PostgreSQL database with Prisma ORM
+\item Kubernetes deployment on Minikube
+\item Persistent storage for both database and uploads
+\end{itemize}
+
+\section{Technical Highlights}
+\subsection{Kubernetes Architecture}
+The system uses separate Deployments for frontend and database components, connected via ClusterIP Services. Key features include:
+
+\begin{tabular}{ll}
+\toprule
+Feature & Implementation \\
+\midrule
+Ingress & NGINX controller with host routing \\
+Persistence & 2 PersistentVolumes (1Gi + 500Mi) \\
+Scaling & HPA configured for frontend pods \\
+\bottomrule
+\end{tabular}
+
+\end{document}
