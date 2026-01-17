@@ -1,0 +1,300 @@
+\documentclass[12pt,a4paper]{article}
+
+% ============================================================================
+% PACKAGES
+% ============================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{listings}
+\usepackage{tcolorbox}
+
+% ============================================================================
+% STYLING
+% ============================================================================
+\definecolor{primaryblue}{RGB}{41, 65, 114}
+\definecolor{accentgray}{RGB}{100, 100, 100}
+\definecolor{lightgray}{RGB}{245, 245, 245}
+\definecolor{codebg}{RGB}{248, 248, 248}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primaryblue,
+    urlcolor=primaryblue,
+    citecolor=primaryblue
+}
+
+\titleformat{\section}{\Large\bfseries\color{primaryblue}}{\thesection}{1em}{}
+\titleformat{\subsection}{\large\bfseries\color{primaryblue!80}}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{primaryblue!60}}{\thesubsubsection}{1em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{accentgray}{PhotoVerify --- Rapport Technique}}
+\fancyhead[R]{\small\textcolor{accentgray}{\thepage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyfoot[C]{\small\textcolor{accentgray}{Projet Cloud \& Kubernetes --- Janvier 2026}}
+
+\lstset{
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    rulecolor=\color{accentgray!30},
+    numbers=left,
+    numberstyle=\tiny\color{accentgray},
+    tabsize=2
+}
+
+\onehalfspacing
+
+% ============================================================================
+% DOCUMENT
+% ============================================================================
+\begin{document}
+
+% ----------------------------------------------------------------------------
+% TITLE PAGE
+% ----------------------------------------------------------------------------
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    
+    {\Huge\bfseries\color{primaryblue} PhotoVerify\par}
+    \vspace{0.5cm}
+    {\Large\color{accentgray} Systeme d'Authentification de Photos par QR Code\par}
+    
+    \vspace{2cm}
+    
+    \begin{tcolorbox}[colback=lightgray, colframe=primaryblue, width=0.8\textwidth, arc=3mm]
+        \centering
+        \large\bfseries Rapport Technique de Projet\\[0.3cm]
+        \normalsize Deploiement Kubernetes sur Minikube
+    \end{tcolorbox}
+    
+    \vspace{3cm}
+    
+    {\large Projet Universitaire\par}
+    {\large Cloud Computing \& Orchestration de Conteneurs\par}
+    
+    \vfill
+    
+    {\large Janvier 2026\par}
+\end{titlepage}
+
+% ----------------------------------------------------------------------------
+% TABLE OF CONTENTS
+% ----------------------------------------------------------------------------
+\tableofcontents
+\newpage
+
+% ----------------------------------------------------------------------------
+% INTRODUCTION
+% ----------------------------------------------------------------------------
+\section{Introduction}
+
+Ce projet est ne d'une reflexion simple : comment demontrer concretement l'integration de plusieurs technologies cloud-native dans un contexte realiste ? Plutot que de creer un enieme tutoriel "Hello World", nous avons choisi de construire une application complete qui resout un probleme reel --- la verification d'authenticite de photos.
+
+L'idee centrale de PhotoVerify est de permettre a un utilisateur d'uploader une photo, d'y associer des metadonnees (titre, date, description), et de generer automatiquement un QR code unique. Ce QR code, une fois scanne, renvoie vers une page de verification qui prouve l'authenticite du document. C'est un cas d'usage concret qu'on retrouve dans les certificats numeriques, les diplomes, ou les documents officiels.
+
+Mais au-dela de la fonctionnalite, ce qui rend ce projet interessant d'un point de vue technique, c'est son architecture. Nous avons volontairement choisi de ne pas nous arreter a une simple application Docker. L'objectif etait d'aller jusqu'au deploiement Kubernetes complet, avec tous les defis que cela implique : gestion des volumes persistants, configuration des services, mise en place d'un Ingress, et meme auto-scaling horizontal.
+
+Ce rapport documente non seulement ce que nous avons construit, mais surtout comment et pourquoi nous avons fait certains choix architecturaux. Les erreurs rencontrees et les solutions trouvees sont tout aussi instructives que le resultat final.
+
+% ----------------------------------------------------------------------------
+% ARCHITECTURE TECHNIQUE
+% ----------------------------------------------------------------------------
+\section{Architecture Technique}
+
+\subsection{Vue d'ensemble}
+
+L'architecture de PhotoVerify suit un modele classique mais robuste : un frontend qui gere l'interface utilisateur et les API, couple a une base de donnees PostgreSQL pour la persistance. Ce qui la distingue, c'est son deploiement sur Kubernetes avec une separation claire des responsabilites.
+
+Le cluster Kubernetes heberge deux Deployments principaux. Le premier gere le frontend Next.js, qui sert a la fois les pages web et les endpoints API. Le second gere PostgreSQL, notre base de donnees relationnelle. Ces deux composants communiquent via des Services Kubernetes, ce qui nous permet de les scaler et les mettre a jour independamment.
+
+\subsection{Choix technologiques}
+
+Pourquoi Next.js ? Parce qu'il nous permet d'avoir le frontend et le backend dans le meme projet, ce qui simplifie considerablement le deploiement. Les API Routes de Next.js gèrent toutes les operations : upload de fichiers, generation de QR codes, interactions avec la base de donnees.
+
+Pourquoi PostgreSQL plutot que SQLite (qu'on utilisait en developpement) ? La migration vers PostgreSQL n'etait pas triviale, mais elle etait necessaire pour un environnement de production. SQLite pose des problemes de concurrence en environnement containerise, et PostgreSQL offre une bien meilleure robustesse pour les volumes persistants Kubernetes.
+
+\subsection{Le flux de donnees}
+
+Quand un utilisateur uploade une photo, voici ce qui se passe :
+
+Premierement, le navigateur envoie la requete au Service NodePort qui ecoute sur le port 30000. Ce service route le trafic vers le pod frontend disponible.
+
+Deuxiemement, l'API Route \texttt{/api/upload} recoit le fichier, le sauvegarde sur le PersistentVolume monte dans \texttt{/app/public/uploads}, genere un UUID unique, et cree le QR code.
+
+Troisiemement, les metadonnees sont inserees dans PostgreSQL via le Service ClusterIP interne, qui n'est accessible que depuis l'interieur du cluster.
+
+Finalement, l'utilisateur recoit l'URL de verification et le QR code en base64.
+
+Ce flux peut sembler simple, mais chaque etape a necessite une configuration precise dans Kubernetes pour fonctionner correctement.
+
+% ----------------------------------------------------------------------------
+% IMPLEMENTATION KUBERNETES
+% ----------------------------------------------------------------------------
+\section{Implementation Kubernetes}
+
+\subsection{Les Deployments}
+
+Notre fichier \texttt{frontend-deployment.yaml} merite qu'on s'y attarde. Au-dela de la configuration basique, nous avons du resoudre plusieurs problemes concrets.
+
+Le premier concernait les permissions de fichiers. Le conteneur Next.js tourne avec un utilisateur non-root (UID 1001) pour des raisons de securite. Mais quand on monte un PersistentVolume, il appartient par defaut a root. Solution : nous avons ajoute un initContainer qui s'execute avant le conteneur principal et ajuste les permissions avec \texttt{chown}.
+
+\begin{lstlisting}[language=bash, caption={InitContainer pour les permissions}]
+initContainers:
+  - name: fix-permissions
+    image: busybox:1.36
+    command: ['sh', '-c', 'chown -R 1001:1001 /app/public/uploads']
+    volumeMounts:
+      - name: uploads-storage
+        mountPath: /app/public/uploads
+    securityContext:
+      runAsUser: 0
+\end{lstlisting}
+
+Le second probleme concernait les health checks. Next.js en mode production met quelques secondes a demarrer. Sans configuration appropriee, Kubernetes tuait le pod avant qu'il soit pret. Nous avons configure des probes avec des delais adaptes.
+
+\subsection{Les Services}
+
+Deux types de Services coexistent dans notre architecture.
+
+Le \texttt{frontend-service} est de type NodePort. Il expose l'application sur le port 30000 du noeud, ce qui permet d'y acceder depuis l'exterieur du cluster. C'est la solution la plus simple pour Minikube, meme si en production on utiliserait plutot un LoadBalancer.
+
+Le \texttt{postgres-service} est de type ClusterIP. Il n'est accessible que depuis l'interieur du cluster, ce qui est exactement ce qu'on veut pour une base de donnees. Aucune raison d'exposer PostgreSQL au monde exterieur.
+
+\subsection{La persistance des donnees}
+
+C'est probablement l'aspect le plus critique de notre deploiement. Sans PersistentVolumes, chaque redemarrage de pod perdrait toutes les donnees.
+
+Nous avons configure deux volumes distincts :
+
+Le premier, \texttt{postgres-pv}, avec 1Gi de stockage, heberge les donnees PostgreSQL. Sa politique de retention est "Retain", ce qui signifie que meme si on supprime le PVC, les donnees restent sur le disque.
+
+Le second, \texttt{frontend-uploads-pv}, avec 500Mi, stocke les photos uploadees. Il est monte dans le pod frontend sur \texttt{/app/public/uploads}.
+
+Cette separation nous permet de gerer independamment la base de donnees et les fichiers uploades, avec des strategies de backup differentes si necessaire.
+
+\subsection{L'Ingress Controller}
+
+Pour demontrer une configuration plus avancee, nous avons ajoute un Ingress NGINX. Au lieu d'acceder a l'application via \texttt{localhost:30000}, on peut maintenant utiliser le hostname \texttt{photoverify.local}.
+
+L'Ingress agit comme un reverse proxy intelligent qui route les requetes vers le bon service en fonction du hostname ou du path. Dans notre cas, toutes les requetes vers \texttt{photoverify.local} sont dirigees vers le frontend.
+
+\subsection{L'auto-scaling horizontal}
+
+Le HorizontalPodAutoscaler (HPA) est configure pour surveiller l'utilisation CPU et memoire du deployment frontend. Si l'utilisation CPU depasse 70\% ou la memoire 80\%, Kubernetes cree automatiquement de nouveaux pods, jusqu'a un maximum de 5.
+
+En pratique, avec notre charge de test, on reste a 1 replica. Mais la configuration est en place et fonctionnelle, prete a scaler si necessaire.
+
+\begin{table}[h]
+\centering
+\caption{Configuration du HPA}
+\begin{tabular}{lc}
+\toprule
+Parametre & Valeur \\
+\midrule
+Replicas minimum & 1 \\
+Replicas maximum & 5 \\
+Seuil CPU & 70\% \\
+Seuil Memoire & 80\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ----------------------------------------------------------------------------
+% DEFIS ET SOLUTIONS
+% ----------------------------------------------------------------------------
+\section{Defis Rencontres et Solutions}
+
+\subsection{Le probleme des fichiers statiques Next.js}
+
+Un des bugs les plus frustrants a ete la non-apparition des images uploadees. Tout fonctionnait : l'upload reussissait, le fichier etait bien sur le volume, mais l'image ne s'affichait pas dans le navigateur.
+
+Apres investigation, nous avons compris le probleme. Next.js en mode "standalone" (necessaire pour Docker) ne sert pas automatiquement les fichiers statiques depuis les volumes montes. Le repertoire \texttt{/app/public/uploads} existe bien, mais Next.js ne le connait pas au runtime.
+
+La solution a ete de creer une API Route dediee \texttt{/api/uploads/[filename]} qui lit manuellement les fichiers depuis le volume et les renvoie avec les bons headers MIME. Pas elegant, mais efficace.
+
+\subsection{La sensibilite a la casse de PostgreSQL}
+
+En developpement avec SQLite, les noms de colonnes n'etaient pas sensibles a la casse. En production avec PostgreSQL, "createdAt" et "createdat" sont deux colonnes differentes.
+
+Prisma genere des noms de colonnes en camelCase, mais PostgreSQL les convertit en minuscules sauf si on les quote. Nous avons du modifier toutes nos requetes SQL brutes pour utiliser des guillemets doubles autour des identifiants mixtes.
+
+\subsection{Les timeouts au demarrage}
+
+Le premier deploiement echouait systematiquement. Kubernetes marquait les pods comme "unhealthy" et les redemarrait en boucle.
+
+Le probleme : nos liveness probes etaient trop agressives. Next.js en production met environ 10-15 secondes a demarrer, mais notre probe commencait a verifier apres 5 secondes seulement.
+
+Solution : augmenter \texttt{initialDelaySeconds} a 30 secondes et \texttt{periodSeconds} a 10 secondes.
+
+% ----------------------------------------------------------------------------
+% RESULTATS
+% ----------------------------------------------------------------------------
+\section{Resultats et Verification}
+
+Pour valider notre implementation, nous avons execute une serie de tests systematiques.
+
+\subsection{Etat des ressources Kubernetes}
+
+Tous les composants sont operationnels :
+
+\begin{table}[h]
+\centering
+\caption{Etat des ressources Kubernetes}
+\begin{tabular}{llc}
+\toprule
+Ressource & Nom & Statut \\
+\midrule
+Pod & frontend-xxx & Running (1/1) \\
+Pod & postgres-xxx & Running (1/1) \\
+Deployment & frontend & 1/1 Ready \\
+Deployment & postgres & 1/1 Ready \\
+Service & frontend-service & NodePort:30000 \\
+Service & postgres-service & ClusterIP:5432 \\
+PVC & frontend-uploads-pvc & Bound (500Mi) \\
+PVC & postgres-pvc & Bound (1Gi) \\
+Ingress & photoverify-ingress & Active \\
+HPA & frontend-hpa & CPU: 1\%/70\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Tests fonctionnels}
+
+Nous avons verifie chaque endpoint :
+
+La page d'accueil repond correctement avec un code 200. L'API \texttt{/api/photos} retourne la liste des photos au format JSON. L'upload via \texttt{/api/upload} cree bien un nouvel enregistrement avec son QR code. La verification via \texttt{/verify/[id]} affiche correctement les details de la photo.
+
+Le test le plus important : supprimer le pod frontend et verifier que les fichiers uploades sont toujours presents apres le redemarrage. Ce test confirme que notre PersistentVolume fonctionne comme prevu.
+
+% ----------------------------------------------------------------------------
+% CONCLUSION
+% ----------------------------------------------------------------------------
+\section{Conclusion}
+
+Ce projet nous a permis d'explorer en profondeur l'ecosysteme Kubernetes, bien au-dela de ce qu'un simple tutoriel pourrait offrir. Les problemes rencontres --- permissions de fichiers, service de fichiers statiques, sensibilite a la casse SQL --- sont exactement le type de defis qu'on rencontre en production.
+
+L'architecture finale est robuste : les donnees persistent, l'application peut scaler, et le deploiement est reproductible via les manifests YAML. Le code source complet est disponible sur GitHub a l'adresse suivante :
+
+\begin{center}
+\url{https://github.com/BamlakT/PhotoVerify-K8s}
+\end{center}
+
+Plusieurs ameliorations seraient envisageables pour aller plus loin : integration d'un service mesh comme Istio pour le monitoring, mise en place de CI/CD avec GitHub Actions, ou deploiement sur un cluster cloud (GKE, EKS, AKS) pour tester le comportement en environnement reel.
+
+Mais tel quel, ce projet demontre une comprehension solide des concepts fondamentaux : Deployments, Services, PersistentVolumes, Ingress, et HPA. C'est une base sur laquelle construire des applications cloud-native plus complexes.
+
+\end{document}
