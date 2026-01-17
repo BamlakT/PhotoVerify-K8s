@@ -1,0 +1,636 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{tcolorbox}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{amssymb}
+
+\geometry{margin=2.5cm}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{PhotoVerify - Projet Kubernetes}
+\fancyhead[R]{\thepage}
+\fancyfoot[C]{Rapport Final - Janvier 2026}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    frame=single
+}
+\lstset{style=mystyle}
+
+\title{
+    \vspace{-2cm}
+    \includegraphics[width=0.3\textwidth]{../public/next.svg}\\[1cm]
+    \textbf{PhotoVerify}\\
+    \large Application de Verification de Photos via QR Code\\[0.5cm]
+    \large Deploiement Kubernetes sur Minikube\\[1cm]
+    \normalsize Rapport Final de Projet
+}
+\author{Projet Universitaire - Cloud \& Kubernetes}
+\date{Janvier 2026}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\tableofcontents
+\newpage
+
+%=============================================================================
+\section{Introduction}
+%=============================================================================
+
+\subsection{Contexte du Projet}
+Ce projet universitaire a pour objectif de demontrer la maitrise des technologies cloud-native, en particulier:
+\begin{itemize}
+    \item \textbf{Web Service}: Application web avec endpoints HTTP
+    \item \textbf{Docker}: Containerisation multi-stage
+    \item \textbf{Kubernetes}: Orchestration multi-container sur Minikube
+\end{itemize}
+
+\subsection{Description de l'Application}
+PhotoVerify est une application web permettant de:
+\begin{itemize}
+    \item Uploader des photos avec metadonnees (titre, description, date)
+    \item Generer automatiquement un QR code unique pour chaque photo
+    \item Verifier l'authenticite d'une photo via son QR code
+    \item Gerer une galerie de certificats personnels
+\end{itemize}
+
+\subsection{Stack Technique}
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Composant} & \textbf{Technologie} \\
+\hline
+Frontend & Next.js 16, React 19, Tailwind CSS \\
+Backend & Next.js API Routes \\
+Base de donnees & PostgreSQL 15 \\
+ORM & Prisma \\
+Containerisation & Docker (multi-stage build) \\
+Orchestration & Kubernetes (Minikube) \\
+\hline
+\end{tabular}
+\caption{Stack technique du projet}
+\end{table}
+
+%=============================================================================
+\section{Architecture}
+%=============================================================================
+
+\subsection{Diagramme d'Architecture}
+
+\begin{tcolorbox}[title=Architecture Kubernetes]
+\begin{verbatim}
+                         +-------------+
+                         |   Browser   |
+                         +------+------+
+                                |
+                                v
++---------------------------------------------------------------+
+|                    Kubernetes Cluster (Minikube)               |
+|                                                                |
+|  +----------------------------------------------------------+ |
+|  |              Ingress Controller (nginx)                   | |
+|  |              Host: photoverify.local                      | |
+|  +----------------------------+-----------------------------+ |
+|                               |                               |
+|                               v                               |
+|  +----------------------------------------------------------+ |
+|  |           Frontend Service (NodePort:30000)               | |
+|  +----------------------------+-----------------------------+ |
+|                               |                               |
+|                               v                               |
+|  +----------------------------------------------------------+ |
+|  |                    Frontend Pod                           | |
+|  |              (Next.js App - Port 3000)                    | |
+|  |    +-------------+          +------------------------+    | |
+|  |    | Uploads PV  |<-------->| frontend-uploads-pvc   |    | |
+|  |    | /app/public |          | 500Mi                  |    | |
+|  |    +-------------+          +------------------------+    | |
+|  +----------------------------+-----------------------------+ |
+|                               |                               |
+|                               v                               |
+|  +----------------------------------------------------------+ |
+|  |          PostgreSQL Service (ClusterIP:5432)              | |
+|  +----------------------------+-----------------------------+ |
+|                               |                               |
+|                               v                               |
+|  +----------------------------------------------------------+ |
+|  |                   PostgreSQL Pod                          | |
+|  |             (postgres:15-alpine - Port 5432)              | |
+|  |    +-------------+          +------------------------+    | |
+|  |    | Data PV     |<-------->| postgres-pvc           |    | |
+|  |    | /var/lib/   |          | 1Gi                    |    | |
+|  |    +-------------+          +------------------------+    | |
+|  +----------------------------------------------------------+ |
+|                                                                |
+|  +----------------------------------------------------------+ |
+|  |         HorizontalPodAutoscaler (frontend-hpa)            | |
+|  |         Min: 1, Max: 5, CPU: 70%, Memory: 80%             | |
+|  +----------------------------------------------------------+ |
++---------------------------------------------------------------+
+\end{verbatim}
+\end{tcolorbox}
+
+\subsection{Flux de Requetes}
+\begin{enumerate}
+    \item \textbf{Browser} $\rightarrow$ L'utilisateur accede a photoverify.local ou NodePort
+    \item \textbf{Ingress} $\rightarrow$ Route le trafic vers frontend-service
+    \item \textbf{Frontend Service} $\rightarrow$ Load balance vers les pods frontend
+    \item \textbf{Frontend Pod} $\rightarrow$ Traite la requete, interroge la base
+    \item \textbf{PostgreSQL Service} $\rightarrow$ Route vers le pod database
+    \item \textbf{PostgreSQL Pod} $\rightarrow$ Stocke/recupere les donnees du PV
+\end{enumerate}
+
+%=============================================================================
+\section{Verification du Cluster Minikube}
+%=============================================================================
+
+\subsection{Objectif}
+Verifier que le cluster Kubernetes local (Minikube) est operationnel.
+
+\subsection{Commande Executee}
+\begin{lstlisting}[language=bash]
+minikube status
+\end{lstlisting}
+
+\subsection{Resultat}
+\begin{tcolorbox}[colback=black!5!white,colframe=green!75!black,title=Output Terminal]
+\begin{verbatim}
+minikube
+type: Control Plane
+host: Running
+kubelet: Running
+apiserver: Running
+kubeconfig: Configured
+\end{verbatim}
+\end{tcolorbox}
+
+\subsection{Analyse}
+Le cluster Minikube est entierement operationnel:
+\begin{itemize}
+    \item Le \textbf{Control Plane} est actif
+    \item Le \textbf{kubelet} (agent de noeud) fonctionne
+    \item L'\textbf{API server} repond aux requetes
+    \item La \textbf{configuration kubectl} est correcte
+\end{itemize}
+
+%=============================================================================
+\section{Verification des Pods}
+%=============================================================================
+
+\subsection{Objectif}
+Verifier que tous les pods de l'application sont en cours d'execution.
+
+\subsection{Commande Executee}
+\begin{lstlisting}[language=bash]
+kubectl get pods -n photoverify -o wide
+\end{lstlisting}
+
+\subsection{Resultat}
+\begin{tcolorbox}[colback=black!5!white,colframe=green!75!black,title=Output Terminal]
+\begin{verbatim}
+NAME                        READY   STATUS    RESTARTS   AGE   IP            NODE
+frontend-65b777b8fc-rxsr5   1/1     Running   0          23m   10.244.0.24   minikube
+postgres-67947f9dd8-qlbvc   1/1     Running   3          72m   10.244.0.17   minikube
+\end{verbatim}
+\end{tcolorbox}
+
+\subsection{Analyse}
+\begin{itemize}
+    \item \textbf{frontend}: Pod en execution (1/1 Ready), pas de redemarrage recent
+    \item \textbf{postgres}: Pod en execution (1/1 Ready), 3 redemarrages (tests de persistence)
+    \item Tous les pods sont sur le noeud \texttt{minikube}
+    \item Les adresses IP internes sont attribuees correctement
+\end{itemize}
+
+%=============================================================================
+\section{Verification des Deployments}
+%=============================================================================
+
+\subsection{Objectif}
+Verifier que les Deployments Kubernetes gerent correctement les replicas.
+
+\subsection{Commande Executee}
+\begin{lstlisting}[language=bash]
+kubectl get deployments -n photoverify
+\end{lstlisting}
+
+\subsection{Resultat}
+\begin{tcolorbox}[colback=black!5!white,colframe=green!75!black,title=Output Terminal]
+\begin{verbatim}
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+frontend   1/1     1            1           145m
+postgres   1/1     1            1           147m
+\end{verbatim}
+\end{tcolorbox}
+
+\subsection{Analyse}
+\begin{itemize}
+    \item Les deux deployments sont \textbf{100\% operationnels}
+    \item \textbf{READY 1/1}: Le nombre desire de replicas correspond au nombre actuel
+    \item \textbf{UP-TO-DATE}: Les pods utilisent la derniere version de l'image
+    \item \textbf{AVAILABLE}: Tous les pods sont prets a recevoir du trafic
+\end{itemize}
+
+%=============================================================================
+\section{Verification des Services}
+%=============================================================================
+
+\subsection{Objectif}
+Verifier que les Services Kubernetes exposent correctement les pods.
+
+\subsection{Commande Executee}
+\begin{lstlisting}[language=bash]
+kubectl get svc -n photoverify -o wide
+\end{lstlisting}
+
+\subsection{Resultat}
+\begin{tcolorbox}[colback=black!5!white,colframe=green!75!black,title=Output Terminal]
+\begin{verbatim}
+NAME               TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          SELECTOR
+frontend-service   NodePort    10.98.138.75    <none>        3000:30000/TCP   app=frontend
+postgres-service   ClusterIP   10.99.203.104   <none>        5432/TCP         app=postgres
+\end{verbatim}
+\end{tcolorbox}
+
+\subsection{Analyse}
+\begin{itemize}
+    \item \textbf{frontend-service (NodePort)}: 
+    \begin{itemize}
+        \item Expose le port 3000 du pod sur le port 30000 du noeud
+        \item Accessible depuis l'exterieur du cluster
+        \item Selecteur: \texttt{app=frontend}
+    \end{itemize}
+    \item \textbf{postgres-service (ClusterIP)}: 
+    \begin{itemize}
+        \item Service interne uniquement (pas d'acces externe)
+        \item Port 5432 pour les connexions PostgreSQL
+        \item Selecteur: \texttt{app=postgres}
+    \end{itemize}
+\end{itemize}
+
+%=============================================================================
+\section{Verification des PersistentVolumes}
+%=============================================================================
+
+\subsection{Objectif}
+Verifier que les donnees persistent grace aux PersistentVolumes.
+
+\subsection{Commande Executee}
+\begin{lstlisting}[language=bash]
+kubectl get pv,pvc -n photoverify
+\end{lstlisting}
+
+\subsection{Resultat}
+\begin{tcolorbox}[colback=black!5!white,colframe=green!75!black,title=Output Terminal]
+\begin{verbatim}
+NAME                                   CAPACITY   ACCESS MODES   STATUS   CLAIM
+persistentvolume/frontend-uploads-pv   500Mi      RWO            Bound    photoverify/frontend-uploads-pvc
+persistentvolume/postgres-pv           1Gi        RWO            Retain   Bound    photoverify/postgres-pvc
+
+NAME                                         STATUS   VOLUME                CAPACITY
+persistentvolumeclaim/frontend-uploads-pvc   Bound    frontend-uploads-pv   500Mi
+persistentvolumeclaim/postgres-pvc           Bound    postgres-pv           1Gi
+\end{verbatim}
+\end{tcolorbox}
+
+\subsection{Analyse}
+\begin{itemize}
+    \item \textbf{frontend-uploads-pv (500Mi)}: 
+    \begin{itemize}
+        \item Stocke les images uploadees
+        \item Monte sur \texttt{/app/public/uploads}
+        \item Status: Bound (lie au PVC)
+    \end{itemize}
+    \item \textbf{postgres-pv (1Gi)}: 
+    \begin{itemize}
+        \item Stocke les donnees PostgreSQL
+        \item Monte sur \texttt{/var/lib/postgresql/data}
+        \item Politique: Retain (conserve les donnees apres suppression)
+    \end{itemize}
+\end{itemize}
+
+%=============================================================================
+\section{Verification de l'Ingress}
+%=============================================================================
+
+\subsection{Objectif}
+Verifier que l'Ingress Controller route le trafic correctement.
+
+\subsection{Commande Executee}
+\begin{lstlisting}[language=bash]
+kubectl get ingress -n photoverify
+\end{lstlisting}
+
+\subsection{Resultat}
+\begin{tcolorbox}[colback=black!5!white,colframe=green!75!black,title=Output Terminal]
+\begin{verbatim}
+NAME                  CLASS   HOSTS               ADDRESS        PORTS   AGE
+photoverify-ingress   nginx   photoverify.local   192.168.49.2   80      50m
+\end{verbatim}
+\end{tcolorbox}
+
+\subsection{Analyse}
+\begin{itemize}
+    \item \textbf{Ingress Class}: nginx (controleur NGINX)
+    \item \textbf{Host}: photoverify.local (nom de domaine local)
+    \item \textbf{Address}: 192.168.49.2 (IP du cluster Minikube)
+    \item \textbf{Port}: 80 (HTTP standard)
+    \item L'Ingress permet d'acceder a l'application via un nom de domaine convivial
+\end{itemize}
+
+%=============================================================================
+\section{Verification du HorizontalPodAutoscaler}
+%=============================================================================
+
+\subsection{Objectif}
+Verifier que le HPA peut scaler automatiquement les pods frontend.
+
+\subsection{Commande Executee}
+\begin{lstlisting}[language=bash]
+kubectl get hpa -n photoverify
+\end{lstlisting}
+
+\subsection{Resultat}
+\begin{tcolorbox}[colback=black!5!white,colframe=green!75!black,title=Output Terminal]
+\begin{verbatim}
+NAME           REFERENCE             TARGETS                        MINPODS   MAXPODS   REPLICAS
+frontend-hpa   Deployment/frontend   cpu: 1%/70%, memory: 37%/80%   1         5         1
+\end{verbatim}
+\end{tcolorbox}
+
+\subsection{Analyse}
+\begin{itemize}
+    \item \textbf{Reference}: Deployment/frontend (cible du scaling)
+    \item \textbf{Metriques}: 
+    \begin{itemize}
+        \item CPU: 1\% utilise / 70\% seuil
+        \item Memory: 37\% utilise / 80\% seuil
+    \end{itemize}
+    \item \textbf{Scaling}: Min 1 pod, Max 5 pods
+    \item \textbf{Replicas actuels}: 1 (charge faible)
+    \item Le HPA augmentera automatiquement les replicas si la charge depasse les seuils
+\end{itemize}
+
+%=============================================================================
+\section{Verification de la Base de Donnees}
+%=============================================================================
+
+\subsection{Objectif}
+Verifier que PostgreSQL fonctionne et contient les tables necessaires.
+
+\subsection{Commande: Liste des Tables}
+\begin{lstlisting}[language=bash]
+kubectl exec deployment/postgres -n photoverify -- psql -U photoverify -d photoverify -c "\dt"
+\end{lstlisting}
+
+\subsection{Resultat}
+\begin{tcolorbox}[colback=black!5!white,colframe=green!75!black,title=Output Terminal]
+\begin{verbatim}
+         List of relations
+ Schema |  Name  | Type  |    Owner
+--------+--------+-------+-------------
+ public | photos | table | photoverify
+ public | users  | table | photoverify
+(2 rows)
+\end{verbatim}
+\end{tcolorbox}
+
+\subsection{Commande: Comptage des Photos}
+\begin{lstlisting}[language=bash]
+kubectl exec deployment/postgres -n photoverify -- psql -U photoverify -d photoverify -c "SELECT COUNT(*) FROM photos;"
+\end{lstlisting}
+
+\subsection{Resultat}
+\begin{tcolorbox}[colback=black!5!white,colframe=green!75!black,title=Output Terminal]
+\begin{verbatim}
+ count 
+-------
+     5
+(1 row)
+\end{verbatim}
+\end{tcolorbox}
+
+\subsection{Analyse}
+\begin{itemize}
+    \item Les tables \textbf{photos} et \textbf{users} existent
+    \item La base contient \textbf{5 photos} uploadees
+    \item La connexion depuis le cluster fonctionne parfaitement
+\end{itemize}
+
+%=============================================================================
+\section{Verification des Endpoints Web}
+%=============================================================================
+
+\subsection{Objectif}
+Verifier que tous les endpoints HTTP repondent correctement.
+
+\subsection{Tests Effectues}
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Endpoint} & \textbf{Methode} & \textbf{Status} \\
+\hline
+/ (Homepage) & GET & 200 OK \\
+/api/photos & GET & 200 OK \\
+/api/user & GET & 200 OK \\
+/add (Upload page) & GET & 200 OK \\
+/api/upload & POST & 200 OK \\
+\hline
+\end{tabular}
+\caption{Resultats des tests d'endpoints}
+\end{table}
+
+\subsection{Test d'Upload}
+\begin{lstlisting}[language=bash]
+curl -X POST -F "file=@test.png" -F "title=Audit Test" \
+     -F "description=Testing" -F "date=2026-01-17" \
+     http://127.0.0.1:57696/api/upload
+\end{lstlisting}
+
+\subsection{Resultat}
+\begin{tcolorbox}[colback=black!5!white,colframe=green!75!black,title=Output Terminal]
+\begin{verbatim}
+{
+  "id": "4f8863e6-165d-4557-8380-9fb019e19b93",
+  "filename": "03f2521b-52fb-4436-b137-cf3267a9f56f.png",
+  "verifyUrl": "http://localhost:30000/verify/4f8863e6-...",
+  "qrCodeData": "data:image/png;base64,iVBORw0KGgo..."
+}
+\end{verbatim}
+\end{tcolorbox}
+
+\subsection{Analyse}
+\begin{itemize}
+    \item L'upload fonctionne correctement
+    \item Un UUID unique est genere pour chaque photo
+    \item Le QR code est genere en base64
+    \item L'URL de verification est fournie
+\end{itemize}
+
+%=============================================================================
+\section{Verification de la Persistence des Uploads}
+%=============================================================================
+
+\subsection{Objectif}
+Verifier que les fichiers uploades survivent aux redemarrages des pods.
+
+\subsection{Commande Executee}
+\begin{lstlisting}[language=bash]
+kubectl exec deployment/frontend -n photoverify -- ls -la /app/public/uploads
+\end{lstlisting}
+
+\subsection{Resultat}
+\begin{tcolorbox}[colback=black!5!white,colframe=green!75!black,title=Output Terminal]
+\begin{verbatim}
+total 316
+drwxr-xr-x    2 nextjs   nodejs      4096 Jan 17 15:55 .
+drwxr-xr-x    1 root     root        4096 Jan  6 12:17 ..
+-rwxr-xr-x    1 nextjs   nodejs        68 Jan 17 15:39 7f5a376d-...png
+-rwxr-xr-x    1 nextjs   nodejs    185102 Jan 17 15:41 942af85f-...jpg
+-rw-r--r--    1 nextjs   nogroup    18682 Jan 17 15:55 a710c305-...webp
+-rwxr-xr-x    1 nextjs   nodejs     97932 Jan 17 15:38 c7125a8b-...png
+\end{verbatim}
+\end{tcolorbox}
+
+\subsection{Analyse}
+\begin{itemize}
+    \item Le repertoire \texttt{/app/public/uploads} contient 4 fichiers
+    \item Les permissions sont correctes (nextjs:nodejs)
+    \item Les fichiers persistent grace au PersistentVolume
+    \item Total: environ 300Ko de fichiers stockes
+\end{itemize}
+
+%=============================================================================
+\section{Fichiers Kubernetes}
+%=============================================================================
+
+\subsection{Structure du Repertoire k8s/}
+\begin{verbatim}
+k8s/
+|-- namespace.yaml           # Namespace photoverify
+|-- postgres-secret.yaml     # Credentials PostgreSQL
+|-- configmap.yaml           # Configuration app
+|-- postgres-pv.yaml         # PV + PVC Database (1Gi)
+|-- frontend-pv.yaml         # PV + PVC Uploads (500Mi)
+|-- postgres-deployment.yaml # Deployment PostgreSQL
+|-- postgres-service.yaml    # Service ClusterIP
+|-- frontend-deployment.yaml # Deployment Frontend
+|-- frontend-service.yaml    # Service NodePort (30000)
+|-- ingress.yaml             # Ingress Controller
+|-- hpa.yaml                 # HorizontalPodAutoscaler
+|-- deploy.sh                # Script deploiement (Bash)
++-- deploy.ps1               # Script deploiement (PowerShell)
+\end{verbatim}
+
+%=============================================================================
+\section{Dockerfile}
+%=============================================================================
+
+\subsection{Build Multi-Stage}
+\begin{lstlisting}[language=bash]
+# Stage 1: Base
+FROM node:20-alpine AS base
+WORKDIR /app
+
+# Stage 2: Dependencies
+FROM base AS deps
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# Stage 3: Builder
+FROM base AS builder
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npx prisma generate
+RUN npm run build
+
+# Stage 4: Runner (Production)
+FROM base AS runner
+ENV NODE_ENV=production
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+RUN mkdir -p public/uploads && chown -R nextjs:nodejs public/uploads
+USER nextjs
+EXPOSE 3000
+CMD ["npm", "start"]
+\end{lstlisting}
+
+%=============================================================================
+\section{Conclusion}
+%=============================================================================
+
+\subsection{Resume des Technologies Implementees}
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|l|}
+\hline
+\textbf{Requirement} & \textbf{Status} & \textbf{Implementation} \\
+\hline
+Web Service & \checkmark & Next.js API Routes \\
+Docker & \checkmark & Multi-stage build \\
+Multi-container & \checkmark & Frontend + PostgreSQL \\
+Kubernetes Deployment & \checkmark & 2 Deployments \\
+Kubernetes Service & \checkmark & NodePort + ClusterIP \\
+PersistentVolume (DB) & \checkmark & postgres-pv (1Gi) \\
+PersistentVolume (Uploads) & \checkmark & frontend-uploads-pv (500Mi) \\
+Ingress & \checkmark & NGINX Ingress Controller \\
+HorizontalPodAutoscaler & \checkmark & CPU/Memory scaling \\
+Frontend Framework & \checkmark & React 19 + Tailwind CSS \\
+Database & \checkmark & PostgreSQL 15 \\
+\hline
+\end{tabular}
+\caption{Checklist des requirements}
+\end{table}
+
+\subsection{Points Forts}
+\begin{itemize}
+    \item Architecture cloud-native complete
+    \item Persistence des donnees (database + uploads)
+    \item Auto-scaling configure
+    \item Interface utilisateur moderne et responsive
+    \item Code source versionne sur GitHub
+\end{itemize}
+
+\subsection{Repository GitHub}
+\url{https://github.com/BamlakT/PhotoVerify-K8s}
+
+\end{document}
