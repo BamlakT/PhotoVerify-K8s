@@ -1,15 +1,36 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: photoverify-db
+    environment:
+      POSTGRES_USER: photoverify
+      POSTGRES_PASSWORD: photoverify123
+      POSTGRES_DB: photoverify
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U photoverify -d photoverify"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+
   app:
     build: .
+    container_name: photoverify-app
     ports:
       - "3000:3000"
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/.next
     environment:
-      - DATABASE_URL=file:./database.db
+      - DATABASE_URL=postgresql://photoverify:photoverify123@postgres:5432/photoverify
       - NEXT_PUBLIC_BASE_URL=http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: always
+
+volumes:
+  postgres_data:

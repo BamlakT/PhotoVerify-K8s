@@ -29,9 +29,9 @@ export async function POST(req: NextRequest) {
         if (existing) {
             await db.run(
                 `UPDATE users SET 
-                    firstName = ?, lastName = ?, birthDate = ?, email = ?, 
-                    phone = ?, profession = ?, zipCode = ?, city = ?, 
-                    country = ?, cryptoSignature = ?, updatedAt = ?
+                    "firstName" = ?, "lastName" = ?, "birthDate" = ?, email = ?, 
+                    phone = ?, profession = ?, "zipCode" = ?, city = ?, 
+                    country = ?, "cryptoSignature" = ?, "updatedAt" = ?
                 WHERE id = 'current-user'`,
                 [
                     data.firstName, data.lastName, data.birthDate, data.email,
@@ -42,9 +42,9 @@ export async function POST(req: NextRequest) {
         } else {
             await db.run(
                 `INSERT INTO users (
-                    id, firstName, lastName, birthDate, email, 
-                    phone, profession, zipCode, city, 
-                    country, cryptoSignature, updatedAt
+                    id, "firstName", "lastName", "birthDate", email, 
+                    phone, profession, "zipCode", city, 
+                    country, "cryptoSignature", "updatedAt"
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     'current-user', data.firstName, data.lastName, data.birthDate, data.email,

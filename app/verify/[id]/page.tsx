@@ -94,11 +94,12 @@ export default function VerifyPage({ params }: { params: Promise<{ id: string }>
                     onClick={() => setIsFullscreen(!isFullscreen)}
                 >
                     <Image
-                        src={`/uploads/${photo.filename}`}
+                        src={`/api/uploads/${photo.filename}`}
                         alt={photo.title || "Document vérifié"}
                         fill
                         className={`object-contain transition-transform duration-500 ${isFullscreen ? 'scale-110' : ''}`}
                         priority
+                        unoptimized
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                         <Maximize2 className="h-12 w-12 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
@@ -175,7 +176,7 @@ export default function VerifyPage({ params }: { params: Promise<{ id: string }>
 
                                         <button
                                             className="w-full py-3 bg-white border-2 border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-100 transition-all flex items-center justify-center space-x-2"
-                                            onClick={() => window.open(`/uploads/${photo.filename}`, '_blank')}
+                                            onClick={() => window.open(`/api/uploads/${photo.filename}`, '_blank')}
                                         >
                                             <Maximize2 className="h-4 w-4" />
                                             <span>Haute Résolution</span>

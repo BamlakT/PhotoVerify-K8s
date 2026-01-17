@@ -140,7 +140,7 @@ export default function MyCertificationsPage() {
                                         </div>
                                     </div>
                                     <div className="w-full md:w-64 h-64 relative rounded-2xl overflow-hidden border-4 border-slate-50 shadow-inner shrink-0 scale-95 hover:scale-100 transition-transform duration-500">
-                                        <Image src={`/uploads/${photo.filename}`} alt="Cert" fill className="object-cover" />
+                                        <Image src={`/api/uploads/${photo.filename}`} alt="Cert" fill className="object-cover" unoptimized />
                                     </div>
                                 </div>
                                 <div className="mt-12 pt-8 border-t border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-8">
