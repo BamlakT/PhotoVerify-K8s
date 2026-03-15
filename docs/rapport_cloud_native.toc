@@ -1,0 +1,23 @@
+\contentsline {section}{\numberline {1}Introduction}{2}{section.1}%
+\contentsline {section}{\numberline {2}Infrastructure as a Service (IaaS)}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Comprendre l'IaaS avec Minikube}{2}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Gestion des ressources virtualisees}{2}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Le stockage dans l'IaaS}{3}{subsection.2.3}%
+\contentsline {section}{\numberline {3}Architectures Cloud Native (Microservices)}{3}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Du monolithe aux microservices}{3}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Communication entre services}{4}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Decouplage et resilience}{5}{subsection.3.3}%
+\contentsline {section}{\numberline {4}Developpement d'Applications Cloud Native}{5}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Les 12 facteurs}{5}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Containerisation avec Docker}{5}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Gestion des logs et observabilite}{6}{subsection.4.3}%
+\contentsline {section}{\numberline {5}Docker et Kubernetes en Pratique}{6}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Deploiement sur Kubernetes}{6}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Les Deployments en detail}{7}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Exposition avec Ingress}{8}{subsection.5.3}%
+\contentsline {subsection}{\numberline {5.4}Auto-scaling avec HPA}{8}{subsection.5.4}%
+\contentsline {subsection}{\numberline {5.5}Debug et troubleshooting}{9}{subsection.5.5}%
+\contentsline {section}{\numberline {6}Resultats et Verification}{9}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Verification complete du deploiement}{9}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Test de la persistance des donnees}{10}{subsection.6.2}%
+\contentsline {section}{\numberline {7}Conclusion}{10}{section.7}%

@@ -17,6 +17,7 @@
 \usepackage{titlesec}
 \usepackage{listings}
 \usepackage{tcolorbox}
+\usepackage{float}
 
 % ============================================================================
 % STYLING
@@ -77,8 +78,12 @@
     
     \begin{tcolorbox}[colback=lightgray, colframe=primaryblue, width=0.8\textwidth, arc=3mm]
         \centering
-        \large\bfseries Rapport Technique de Projet\\[0.3cm]
-        \normalsize Deploiement Kubernetes sur Minikube
+        \large\bfseries Rapport de Projet Cloud\\[0.3cm]
+        \normalsize Déploiement Kubernetes sur Minikube\\[0.5cm]
+        \normalsize
+        \textbf{Auteurs :} Bamlak GURARA, Sami BOUALAMI\\[0.3cm]
+        \textbf{École :} EFREI Paris\\[0.3cm]
+        \textbf{Cours :} Intégration Cloud
     \end{tcolorbox}
     
     \vspace{3cm}
@@ -105,6 +110,15 @@
 Ce projet est ne d'une reflexion simple : comment demontrer concretement l'integration de plusieurs technologies cloud-native dans un contexte realiste ? Plutot que de creer un enieme tutoriel "Hello World", nous avons choisi de construire une application complete qui resout un probleme reel --- la verification d'authenticite de photos.
 
 L'idee centrale de PhotoVerify est de permettre a un utilisateur d'uploader une photo, d'y associer des metadonnees (titre, date, description), et de generer automatiquement un QR code unique. Ce QR code, une fois scanne, renvoie vers une page de verification qui prouve l'authenticite du document. C'est un cas d'usage concret qu'on retrouve dans les certificats numeriques, les diplomes, ou les documents officiels.
+
+Ce rapport presente une analyse detaillee de notre implementation, accompagnee de captures d'ecran illustrant chaque etape du processus. Les figures qui suivent demontreront l'interface utilisateur, le flux de donnees, et l'architecture technique deployee sur Kubernetes.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{screenshots/homepage.png}
+    \caption{Page d'accueil de PhotoVerify avec le bouton d'upload principal}
+    \label{fig:homepage}
+\end{figure}
 
 Mais au-dela de la fonctionnalite, ce qui rend ce projet interessant d'un point de vue technique, c'est son architecture. Nous avons volontairement choisi de ne pas nous arreter a une simple application Docker. L'objectif etait d'aller jusqu'au deploiement Kubernetes complet, avec tous les defis que cela implique : gestion des volumes persistants, configuration des services, mise en place d'un Ingress, et meme auto-scaling horizontal.
 
@@ -135,9 +149,23 @@ Premierement, le navigateur envoie la requete au Service NodePort qui ecoute sur
 
 Deuxiemement, l'API Route \texttt{/api/upload} recoit le fichier, le sauvegarde sur le PersistentVolume monte dans \texttt{/app/public/uploads}, genere un UUID unique, et cree le QR code.
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{screenshots/upload_form.png}
+    \caption{Formulaire d'upload montrant la selection de fichier et les champs de metadonnees}
+    \label{fig:upload}
+\end{figure}
+
 Troisiemement, les metadonnees sont inserees dans PostgreSQL via le Service ClusterIP interne, qui n'est accessible que depuis l'interieur du cluster.
 
 Finalement, l'utilisateur recoit l'URL de verification et le QR code en base64.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{screenshots/account.png}
+    \caption{Interface de gestion de compte utilisateur avec signature crypto}
+    \label{fig:account}
+\end{figure}
 
 Ce flux peut sembler simple, mais chaque etape a necessite une configuration precise dans Kubernetes pour fonctionner correctement.
 
@@ -278,6 +306,13 @@ Nous avons verifie chaque endpoint :
 
 La page d'accueil repond correctement avec un code 200. L'API \texttt{/api/photos} retourne la liste des photos au format JSON. L'upload via \texttt{/api/upload} cree bien un nouvel enregistrement avec son QR code. La verification via \texttt{/verify/[id]} affiche correctement les details de la photo.
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{screenshots/register.png}
+    \caption{Page d'enregistrement avec configuration du profil utilisateur}
+    \label{fig:register}
+\end{figure}
+
 Le test le plus important : supprimer le pod frontend et verifier que les fichiers uploades sont toujours presents apres le redemarrage. Ce test confirme que notre PersistentVolume fonctionne comme prevu.
 
 % ----------------------------------------------------------------------------
@@ -296,5 +331,28 @@ L'architecture finale est robuste : les donnees persistent, l'application peut s
 Plusieurs ameliorations seraient envisageables pour aller plus loin : integration d'un service mesh comme Istio pour le monitoring, mise en place de CI/CD avec GitHub Actions, ou deploiement sur un cluster cloud (GKE, EKS, AKS) pour tester le comportement en environnement reel.
 
 Mais tel quel, ce projet demontre une comprehension solide des concepts fondamentaux : Deployments, Services, PersistentVolumes, Ingress, et HPA. C'est une base sur laquelle construire des applications cloud-native plus complexes.
+
+% ----------------------------------------------------------------------------
+% CAPTURES GOOGLE CLOUD SKILLS
+% ----------------------------------------------------------------------------
+\section{Captures Google Cloud Skills}
+
+Dans le cadre de ce projet, nous avons également suivi des formations sur Google Cloud Skills Boost pour acquérir des compétences pratiques sur les technologies cloud.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{lab_screenshots/bamlak_lab_completion.png}
+    \caption{Progression des labs Google Cloud Skills – Bamlak GURARA}
+    \label{fig:bamlak_labs}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{lab_screenshots/sami_lab_completion.png}
+    \caption{Progression des labs Google Cloud Skills – Sami BOUALAMI}
+    \label{fig:sami_labs}
+\end{figure}
+
+Ces formations nous ont permis de mieux comprendre les services managés et les bonnes pratiques de déploiement sur cloud, complémentant parfaitement notre expérience avec Kubernetes sur Minikube.
 
 \end{document}
